@@ -1,0 +1,58 @@
+import cv2
+import  numpy as np
+
+cap = cv2.VideoCapture(1)
+# создаем пустую функцию
+def nothing(args):pass
+# создаем окно для отображения результата и бегунки
+cv2.namedWindow("setup")
+cv2.createTrackbar("b1", "setup", 0, 255, nothing)
+cv2.createTrackbar("g1", "setup", 0, 255, nothing)
+cv2.createTrackbar("r1", "setup", 0, 255, nothing)
+cv2.createTrackbar("b2", "setup", 194, 255, nothing)
+cv2.createTrackbar("g2", "setup", 76, 255, nothing)
+cv2.createTrackbar("r2", "setup", 250, 255, nothing)
+while True:
+    r1 = cv2.getTrackbarPos('r1', 'setup')
+    g1 = cv2.getTrackbarPos('g1', 'setup')
+    b1 = cv2.getTrackbarPos('b1', 'setup')
+    r2 = cv2.getTrackbarPos('r2', 'setup')
+    g2 = cv2.getTrackbarPos('g2', 'setup')
+    b2 = cv2.getTrackbarPos('b2', 'setup')
+    # собираем значения из бегунков в множества
+    min_p = (g1, b1, r1)
+    max_p = (g2, b2, r2)
+    _, frame = cap.read()
+
+
+
+    frame_blur = cv2.GaussianBlur(frame, (11, 11), 20)
+    gray_core = cv2.cvtColor(frame_blur,cv2.COLOR_BGR2GRAY)
+    hvs_core = cv2.cvtColor(frame_blur, cv2.COLOR_BGR2HSV)
+    frame_threshold = cv2.inRange(hvs_core, (min_p), (max_p))
+    frame_threshold = cv2.bitwise_not(frame_threshold)
+    _, threshold = cv2.threshold(gray_core,190,255,cv2.THRESH_BINARY_INV)
+    contours, _ = cv2.findContours(frame_threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for cnt in contours:
+        (x, y, w, h) = cv2.boundingRect(cnt)
+
+        area = cv2.contourArea(cnt)
+        if 23000 < area < 26000:
+            cv2.rectangle(frame_blur, (x, y), (x + w, y + h), (0, 255, 0), 3)
+            cv2.putText(frame_blur, str(area), (x, y), 1, 1, (100, 0, 0))
+        elif area > 26000:
+            cv2.rectangle(frame_blur, (x, y), (x + w, y + h), (0, 0, 255), 3)
+            cv2.putText(frame_blur, str(area), (x, y), 1, 1, (100, 0, 0))
+
+
+
+
+    cv2.imshow("frame_threshold", frame_threshold)
+    cv2.imshow("Frame", frame_blur)
+    key = cv2.waitKey(1)
+    if key == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
